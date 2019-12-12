@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -13,6 +15,78 @@ import (
 
 // ID of a window.
 type ID string
+
+func NewGeometry(filename string) *Geometry {
+	return &Geometry{
+		filename:     filename,
+		connectables: NewConnectables(),
+		windows:      NewWindows(),
+	}
+}
+
+type Geometry struct {
+	filename     string
+	connectables Connectables
+	windows      Windows
+}
+
+func (g *Geometry) Add(id ID, connectable Connectable) {
+	window := Window{ID: id}
+	window.SetPosition(connectable.GetPosition())
+	window.SetSize(connectable.GetSize())
+	window.SetMaximized(connectable.IsMaximized())
+	g.connectables[id] = connectable
+	g.windows[id] = &window
+}
+
+func (g *Geometry) Get(id ID) *Window {
+	return g.windows.Get(id)
+}
+
+func (g *Geometry) Store() error {
+	f, err := os.OpenFile(g.filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("Cannot open window geometry file %s: %w", g.filename, err)
+	}
+	defer f.Close()
+
+	err = g.windows.Store(f)
+	if err != nil {
+		return fmt.Errorf("Cannot store window geometry: %w", err)
+	}
+
+	log.Printf("Stored window geometry in %s", f.Name())
+	return nil
+}
+
+func (g *Geometry) Restore() error {
+	log.Printf("Loading window geometry from %s", g.filename)
+
+	f, err := os.Open(g.filename)
+	if err != nil {
+		return fmt.Errorf("Cannot open %s: %w", g.filename, err)
+	}
+	defer f.Close()
+
+	loaded, err := LoadWindows(f)
+	if err != nil {
+		return fmt.Errorf("Cannot load window geometry: %w", err)
+	}
+
+	for id, window := range loaded {
+		g.windows[id] = window
+		connectable, ok := g.connectables[id]
+		if !ok {
+			continue
+		}
+		connectable.Move(window.X, window.Y)
+		connectable.Resize(window.Width, window.Height)
+		if window.Maximized {
+			connectable.Maximize()
+		}
+	}
+	return nil
+}
 
 // Window contains all data about a window.
 type Window struct {
@@ -80,12 +154,20 @@ type Connectable interface {
 	Observable
 }
 
+// Connectables contains connectables mapped by their ID.
+type Connectables map[ID]Connectable
+
+// NewConnectables instance.
+func NewConnectables() Connectables {
+	return make(Connectables)
+}
+
 // Windows contains windows mapped by their ID.
 type Windows map[ID]*Window
 
 // NewWindows instance.
 func NewWindows() Windows {
-	return make(map[ID]*Window)
+	return make(Windows)
 }
 
 // LoadWindows from the given reader.
