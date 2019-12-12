@@ -2,6 +2,16 @@
 
 gmtry is a Go library that allows to store and restore the geometry of windows on the screen.
 
+### Protobuf
+To generate the Go-code related to Protobuf, use the following command:
+
+```
+go generate ./...
+```
+
+This will generate the Go-code into the packge `pb`.
+
+
 ## Disclaimer
 I develop this tool for myself and just for fun in my free time. If you find it useful, I'm happy to hear about that. If you have trouble using it, you have all the source code to fix the problem yourself (although pull requests are welcome).
 
