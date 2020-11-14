@@ -31,12 +31,18 @@ type Geometry struct {
 }
 
 func (g *Geometry) Add(id ID, connectable Connectable) {
-	window := Window{ID: id}
-	window.SetPosition(connectable.GetPosition())
-	window.SetSize(connectable.GetSize())
-	window.SetMaximized(connectable.IsMaximized())
+	var window *Window
+	window, ok := g.windows[id]
+	if ok {
+		window.Apply(connectable)
+	} else {
+		window = &Window{ID: id}
+		window.SetPosition(connectable.GetPosition())
+		window.SetSize(connectable.GetSize())
+		window.SetMaximized(connectable.IsMaximized())
+		g.windows[id] = window
+	}
 	g.connectables[id] = connectable
-	g.windows[id] = &window
 }
 
 func (g *Geometry) Get(id ID) *Window {
@@ -79,11 +85,7 @@ func (g *Geometry) Restore() error {
 		if !ok {
 			continue
 		}
-		connectable.Move(window.X, window.Y)
-		connectable.Resize(window.Width, window.Height)
-		if window.Maximized {
-			connectable.Maximize()
-		}
+		window.Apply(connectable)
 	}
 	return nil
 }
