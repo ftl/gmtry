@@ -10,6 +10,7 @@ message Window {
     Position position = 2;
     Size size = 3;
     bool maximized = 4;
+    bool visible = 5;
 }
 
 message Position {

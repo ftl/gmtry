@@ -98,6 +98,7 @@ type Window struct {
 	Width     int
 	Height    int
 	Maximized bool
+	Visible   bool
 }
 
 func (w *Window) String() string {
@@ -134,6 +135,11 @@ func (w *Window) SetSize(width, height int) {
 // SetMaximized flag of this window.
 func (w *Window) SetMaximized(maximized bool) {
 	w.Maximized = maximized
+}
+
+// SetVisible flag of this window.
+func (w *Window) SetVisible(visible bool) {
+	w.Visible = visible
 }
 
 // Applyable represents anything that window geometry can be applied to.
@@ -192,6 +198,7 @@ func LoadWindows(r io.Reader) (Windows, error) {
 			Width:     int(pbWindow.Size.Width),
 			Height:    int(pbWindow.Size.Height),
 			Maximized: pbWindow.Maximized,
+			Visible:   pbWindow.Visible,
 		}
 		result[window.ID] = &window
 	}
@@ -207,6 +214,7 @@ func (w Windows) Store(writer io.Writer) error {
 			Position:  &pb.Position{X: int32(window.X), Y: int32(window.Y)},
 			Size:      &pb.Size{Width: int32(window.Width), Height: int32(window.Height)},
 			Maximized: window.Maximized,
+			Visible:   window.Visible,
 		}
 		pbWindows.Windows = append(pbWindows.Windows, &pbWindow)
 	}
